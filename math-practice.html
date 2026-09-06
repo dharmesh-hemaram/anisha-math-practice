@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Practice - All Chapters</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .grade-badge { font-size: 2rem; font-weight: bold; padding: 20px; border-radius: 50%; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; }
+        .checkbox-card { transition: all 0.3s ease; }
+        .checkbox-card.selected { @apply ring-4 ring-purple-400 scale-105; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script>
+        class MathPracticeApp {
+            constructor() {
+                this.currentScreen = 'menu';
+                this.currentQuestion = null;
+                this.userAnswer = '';
+                this.feedback = null;
+                this.showSteps = false;
+                this.score = { correct: 0, total: 0 };
+                this.sessionHistory = [];
+                this.currentSessionQuestions = [];
+                this.selectedChapters = {
+                    chapter1: true,
+                    chapter2: true,
+                    chapter3: true,
+                    chapter4: true
+                };
+                this.selectedSessionIndex = null;
+                this.loadSessions();
+                this.render();
+            }
+
+            getGrade(percentage) {
+                if (percentage >= 91) return { grade: 'A1', color: 'bg-green-600' };
+                if (percentage >= 81) return { grade: 'A2', color: 'bg-green-500' };
+                if (percentage >= 71) return { grade: 'B1', color: 'bg-blue-600' };
+                if (percentage >= 61) return { grade: 'B2', color: 'bg-blue-500' };
+                if (percentage >= 51) return { grade: 'C1', color: 'bg-yellow-600' };
+                if (percentage >= 41) return { grade: 'C2', color: 'bg-yellow-500' };
+                if (percentage >= 33) return { grade: 'D', color: 'bg-orange-600' };
+                if (percentage >= 21) return { grade: 'E1', color: 'bg-red-600' };
+                return { grade: 'E2', color: 'bg-red-700' };
+            }
+
+            saveSessions() { localStorage.setItem('mathPracticeSessions', JSON.stringify(this.sessionHistory)); }
+            loadSessions() { const saved = localStorage.getItem('mathPracticeSessions'); if (saved) this.sessionHistory = JSON.parse(saved); }
+
+            // ===== CHAPTER 1: Numbers up to 9999 =====
+            genPlaceValue() {
+                const num = Math.floor(Math.random() * 9000) + 1000;
+                const places = ['ones', 'tens', 'hundreds', 'thousands'];
+                const placeIndex = Math.floor(Math.random() * 4);
+                const place = places[placeIndex];
+                let digit = [num % 10, Math.floor(num / 10) % 10, Math.floor(num / 100) % 10, Math.floor(num / 1000)][placeIndex];
+                return { type: 'ch1', question: `What digit is in the ${place} place of ${num}?`, answer: digit, explanation: `Thousands: ${Math.floor(num / 1000)}, Hundreds: ${Math.floor(num / 100) % 10}, Tens: ${Math.floor(num / 10) % 10}, Ones: ${num % 10}\nAnswer: ${digit}`, category: 'Place Value' };
+            }
+
+            genPredecessor() {
+                const num = Math.floor(Math.random() * 9000) + 1001;
+                return { type: 'ch1', question: `Predecessor of ${num}:`, answer: num - 1, explanation: `Predecessor = ${num} - 1 = ${num - 1}`, category: 'Predecessor' };
+            }
+
+            genSuccessor() {
+                const num = Math.floor(Math.random() * 9000) + 1000;
+                return { type: 'ch1', question: `Successor of ${num}:`, answer: num + 1, explanation: `Successor = ${num} + 1 = ${num + 1}`, category: 'Successor' };
+            }
+
+            genComparison() {
+                const a = Math.floor(Math.random() * 9000) + 1000;
+                const b = Math.floor(Math.random() * 9000) + 1000;
+                const symbol = a > b ? '>' : a < b ? '<' : '=';
+                return { type: 'ch1', question: `${a} ___ ${b}`, answer: symbol, explanation: `${a} ${symbol} ${b}`, category: 'Comparison', isComparison: true };
+            }
+
+            genRounding() {
+                const num = Math.floor(Math.random() * 900) + 100;
+                const rounded = Math.round(num / 10) * 10;
+                return { type: 'ch1', question: `Round ${num} to nearest tens:`, answer: rounded, explanation: `${num} rounded to nearest tens = ${rounded}`, category: 'Rounding' };
+            }
+
+            genEvenOdd() {
+                const num = Math.floor(Math.random() * 900) + 100;
+                const answer = (num % 2 === 0) ? 'even' : 'odd';
+                return { type: 'ch1', question: `Is ${num} even or odd?`, answer: answer, explanation: `${num} is ${answer} because it ${num % 2 === 0 ? 'ends in 0,2,4,6,8' : 'ends in 1,3,5,7,9'}`, category: 'Even/Odd' };
+            }
+
+            // ===== CHAPTER 2: Addition =====
+            genAddition3Digit() {
+                const a = Math.floor(Math.random() * 900) + 100;
+                const b = Math.floor(Math.random() * 900) + 100;
+                const answer = a + b;
+                return { type: 'ch2', question: `${a} + ${b} = ?`, answer: answer, explanation: `Ones: ${a % 10} + ${b % 10} = ${(a+b)%10}\nTens: ${Math.floor(a/10)%10} + ${Math.floor(b/10)%10}\nHundreds: ${Math.floor(a/100)} + ${Math.floor(b/100)}\nAnswer: ${answer}`, category: 'Addition (3-digit)' };
+            }
+
+            genAddition4Digit() {
+                const a = Math.floor(Math.random() * 9000) + 1000;
+                const b = Math.floor(Math.random() * 9000) + 1000;
+                const answer = a + b;
+                return { type: 'ch2', question: `${a} + ${b} = ?`, answer: answer, explanation: `Add ones, tens, hundreds, thousands\nAnswer: ${answer}`, category: 'Addition (4-digit)' };
+            }
+
+            genAdditionMental() {
+                const a = Math.floor(Math.random() * 5000) + 1000;
+                const b = [10, 100, 1000][Math.floor(Math.random() * 3)];
+                return { type: 'ch2', question: `${a} + ${b} = ?`, answer: a + b, explanation: `When adding 10, 100, or 1000, increase the digit in that place\nAnswer: ${a + b}`, category: 'Mental Addition' };
+            }
+
+            genAdditionThreeNumbers() {
+                const a = Math.floor(Math.random() * 300) + 100;
+                const b = Math.floor(Math.random() * 300) + 100;
+                const c = Math.floor(Math.random() * 300) + 100;
+                const answer = a + b + c;
+                return { type: 'ch2', question: `${a} + ${b} + ${c} = ?`, answer: answer, explanation: `Add step by step:\n${a} + ${b} = ${a+b}\n${a+b} + ${c} = ${answer}`, category: 'Addition (3 numbers)' };
+            }
+
+            // ===== CHAPTER 3: Subtraction =====
+            genSubtraction3Digit() {
+                const a = Math.floor(Math.random() * 900) + 100;
+                const b = Math.floor(Math.random() * Math.min(a - 1, 900));
+                const answer = a - b;
+                return { type: 'ch3', question: `${a} - ${b} = ?`, answer: answer, explanation: `Subtract ones, tens, hundreds\nAnswer: ${answer}`, category: 'Subtraction (3-digit)' };
+            }
+
+            genSubtraction4Digit() {
+                const a = Math.floor(Math.random() * 9000) + 1000;
+                const b = Math.floor(Math.random() * Math.min(a - 1, 9000));
+                const answer = a - b;
+                return { type: 'ch3', question: `${a} - ${b} = ?`, answer: answer, explanation: `Subtract ones, tens, hundreds, thousands\nAnswer: ${answer}`, category: 'Subtraction (4-digit)' };
+            }
+
+            genSubtractionMental() {
+                const a = Math.floor(Math.random() * 5000) + 1000;
+                const b = [10, 100, 1000][Math.floor(Math.random() * 3)];
+                const answer = a - b;
+                return { type: 'ch3', question: `${a} - ${b} = ?`, answer: answer, explanation: `When subtracting 10, 100, or 1000, decrease the digit in that place\nAnswer: ${answer}`, category: 'Mental Subtraction' };
+            }
+
+            genAdditionSubtractionMixed() {
+                const a = Math.floor(Math.random() * 1000) + 1000;
+                const b = Math.floor(Math.random() * 500) + 100;
+                const c = Math.floor(Math.random() * 300) + 50;
+                const answer = a + b - c;
+                return { type: 'ch3', question: `${a} + ${b} - ${c} = ?`, answer: answer, explanation: `First add: ${a} + ${b} = ${a+b}\nThen subtract: ${a+b} - ${c} = ${answer}`, category: 'Mixed Operations' };
+            }
+
+            // ===== CHAPTER 4: Multiplication =====
+            genMultiplication1Digit() {
+                const a = Math.floor(Math.random() * 900) + 100;
+                const b = Math.floor(Math.random() * 9) + 2;
+                const answer = a * b;
+                return { type: 'ch4', question: `${a} × ${b} = ?`, answer: answer, explanation: `Multiply each digit by ${b}\nAnswer: ${answer}`, category: 'Multiplication (×1-digit)' };
+            }
+
+            genMultiplication2Digit() {
+                const a = Math.floor(Math.random() * 90) + 10;
+                const b = Math.floor(Math.random() * 90) + 10;
+                const answer = a * b;
+                return { type: 'ch4', question: `${a} × ${b} = ?`, answer: answer, explanation: `Multiply ${a} by ones and tens of ${b}, then add\nAnswer: ${answer}`, category: 'Multiplication (2-digit)' };
+            }
+
+            genMultiplicationMental() {
+                const a = Math.floor(Math.random() * 100) + 10;
+                const b = [10, 100][Math.floor(Math.random() * 2)];
+                const answer = a * b;
+                return { type: 'ch4', question: `${a} × ${b} = ?`, answer: answer, explanation: `When multiplying by 10 or 100, add zeros\nAnswer: ${answer}`, category: 'Mental Multiplication' };
+            }
+
+            generateQuestion() {
+                const generators = [];
+                
+                if (this.selectedChapters.chapter1) {
+                    generators.push(
+                        () => this.genPlaceValue(),
+                        () => this.genPredecessor(),
+                        () => this.genSuccessor(),
+                        () => this.genComparison(),
+                        () => this.genRounding(),
+                        () => this.genEvenOdd()
+                    );
+                }
+                if (this.selectedChapters.chapter2) {
+                    generators.push(
+                        () => this.genAddition3Digit(),
+                        () => this.genAddition4Digit(),
+                        () => this.genAdditionMental(),
+                        () => this.genAdditionThreeNumbers()
+                    );
+                }
+                if (this.selectedChapters.chapter3) {
+                    generators.push(
+                        () => this.genSubtraction3Digit(),
+                        () => this.genSubtraction4Digit(),
+                        () => this.genSubtractionMental(),
+                        () => this.genAdditionSubtractionMixed()
+                    );
+                }
+                if (this.selectedChapters.chapter4) {
+                    generators.push(
+                        () => this.genMultiplication1Digit(),
+                        () => this.genMultiplication2Digit(),
+                        () => this.genMultiplicationMental()
+                    );
+                }
+
+                const gen = generators[Math.floor(Math.random() * generators.length)];
+                this.currentQuestion = gen();
+                this.userAnswer = '';
+                this.feedback = null;
+                this.showSteps = false;
+                this.render();
+                setTimeout(() => { const inp = document.getElementById('answerInput'); if (inp) inp.focus(); }, 0);
+            }
+
+            validateAnswer() {
+                const inp = document.getElementById('answerInput');
+                if (inp) this.userAnswer = inp.value;
+                if (!this.userAnswer.trim()) { this.feedback = { correct: false, message: 'Please enter an answer!' }; this.render(); return; }
+                const isCorrect = String(this.userAnswer).trim() === String(this.currentQuestion.answer).trim();
+                if (isCorrect) { this.score.correct++; this.feedback = { correct: true, message: '🎉 Correct!' }; } 
+                else { this.feedback = { correct: false, message: `❌ Incorrect. Answer: ${this.currentQuestion.answer}` }; this.showSteps = true; }
+                this.score.total++;
+                this.currentSessionQuestions.push({ category: this.currentQuestion.category, question: this.currentQuestion.question, studentAnswer: this.userAnswer, correctAnswer: this.currentQuestion.answer, isCorrect: isCorrect, explanation: this.currentQuestion.explanation });
+                this.render();
+            }
+
+            selectSymbol(symbol) { this.userAnswer = symbol; setTimeout(() => this.validateAnswer(), 50); }
+            startPractice() { this.currentScreen = 'practice'; this.score = { correct: 0, total: 0 }; this.currentSessionQuestions = []; this.generateQuestion(); }
+            endSession() {
+                const percentage = this.score.total > 0 ? Math.round((this.score.correct / this.score.total) * 100) : 0;
+                const gradeInfo = this.getGrade(percentage);
+                const session = { date: new Date().toLocaleString(), totalQuestions: this.score.total, correctAnswers: this.score.correct, percentage: percentage, grade: gradeInfo.grade, questions: this.currentSessionQuestions };
+                this.sessionHistory.push(session);
+                this.saveSessions();
+                this.currentScreen = 'review';
+                this.render();
+            }
+
+            toggleChapter(chapter) { 
+                this.selectedChapters[chapter] = !this.selectedChapters[chapter]; 
+                this.renderChapterSelect();
+            }
+            viewSessionHistory() { this.currentScreen = 'sessionHistory'; this.render(); }
+            viewSessionDetail(index) { this.selectedSessionIndex = index; this.currentScreen = 'sessionDetail'; this.render(); }
+            goBack() {
+                if (this.currentScreen === 'practice') this.currentScreen = 'chapterSelect';
+                else if (this.currentScreen === 'review') this.currentScreen = 'menu';
+                else if (this.currentScreen === 'sessionHistory' || this.currentScreen === 'sessionDetail') this.currentScreen = this.currentScreen === 'sessionDetail' ? 'sessionHistory' : 'menu';
+                else if (this.currentScreen === 'chapterSelect') this.currentScreen = 'menu';
+                this.render();
+            }
+
+            render() {
+                if (this.currentScreen === 'menu') this.renderMenu();
+                else if (this.currentScreen === 'chapterSelect') this.renderChapterSelect();
+                else if (this.currentScreen === 'practice') this.renderPractice();
+                else if (this.currentScreen === 'review') this.renderReview();
+                else if (this.currentScreen === 'sessionHistory') this.renderSessionHistory();
+                else if (this.currentScreen === 'sessionDetail') this.renderSessionDetail();
+            }
+
+            renderMenu() {
+                document.getElementById('app').innerHTML = `
+                    <div class="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-pink-100 p-6">
+                        <div class="max-w-2xl mx-auto">
+                            <div class="text-center mb-12">
+                                <h1 class="text-5xl font-bold text-purple-800 mb-2">Math Practice Zone</h1>
+                                <p class="text-gray-600 text-lg">All Chapters - Learn & Improve! 📚</p>
+                            </div>
+                            <div class="space-y-4">
+                                <button onclick="app.currentScreen='chapterSelect'; app.render()" class="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold py-4 px-6 rounded-lg text-lg">▶ Start Practice Session</button>
+                                ${this.sessionHistory.length > 0 ? `<button onclick="app.viewSessionHistory()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-4 px-6 rounded-lg text-lg">📊 View History (${this.sessionHistory.length})</button>` : ''}
+                            </div>
+                            <div class="mt-12 bg-white rounded-lg shadow-lg p-8">
+                                <h2 class="text-2xl font-bold text-gray-800 mb-4">📚 Available Chapters:</h2>
+                                <div class="space-y-2 text-gray-700">
+                                    <p>✓ Chapter 1: Numbers up to 9999</p>
+                                    <p>✓ Chapter 2: Addition</p>
+                                    <p>✓ Chapter 3: Subtraction</p>
+                                    <p>✓ Chapter 4: Multiplication</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderChapterSelect() {
+                document.getElementById('app').innerHTML = `
+                    <div class="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-pink-100 p-6">
+                        <div class="max-w-2xl mx-auto">
+                            <div class="text-center mb-8"><h1 class="text-4xl font-bold text-purple-800">Select Chapters to Practice</h1><p class="text-gray-600">Click to select/deselect chapters</p></div>
+                            <div class="space-y-4 mb-8">
+                                <div class="bg-white p-6 rounded-lg shadow cursor-pointer transition ${this.selectedChapters.chapter1 ? 'ring-4 ring-purple-400 bg-purple-50' : ''}" onclick="app.selectedChapters.chapter1 = !app.selectedChapters.chapter1; app.renderChapterSelect();">
+                                    <div class="flex items-start">
+                                        <div class="w-6 h-6 mt-1 flex items-center justify-center border-2 ${this.selectedChapters.chapter1 ? 'border-purple-600 bg-purple-600' : 'border-gray-300'} rounded">
+                                            ${this.selectedChapters.chapter1 ? '<span class="text-white font-bold">✓</span>' : ''}
+                                        </div>
+                                        <div class="ml-4">
+                                            <span class="text-lg font-bold block">Chapter 1: Numbers up to 9999</span>
+                                            <p class="text-sm text-gray-600">Place value, Predecessor/Successor, Comparison, Rounding, Even/Odd</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-6 rounded-lg shadow cursor-pointer transition ${this.selectedChapters.chapter2 ? 'ring-4 ring-purple-400 bg-purple-50' : ''}" onclick="app.selectedChapters.chapter2 = !app.selectedChapters.chapter2; app.renderChapterSelect();">
+                                    <div class="flex items-start">
+                                        <div class="w-6 h-6 mt-1 flex items-center justify-center border-2 ${this.selectedChapters.chapter2 ? 'border-purple-600 bg-purple-600' : 'border-gray-300'} rounded">
+                                            ${this.selectedChapters.chapter2 ? '<span class="text-white font-bold">✓</span>' : ''}
+                                        </div>
+                                        <div class="ml-4">
+                                            <span class="text-lg font-bold block">Chapter 2: Addition</span>
+                                            <p class="text-sm text-gray-600">3-digit & 4-digit addition, Mental math, Adding 3 numbers</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-6 rounded-lg shadow cursor-pointer transition ${this.selectedChapters.chapter3 ? 'ring-4 ring-purple-400 bg-purple-50' : ''}" onclick="app.selectedChapters.chapter3 = !app.selectedChapters.chapter3; app.renderChapterSelect();">
+                                    <div class="flex items-start">
+                                        <div class="w-6 h-6 mt-1 flex items-center justify-center border-2 ${this.selectedChapters.chapter3 ? 'border-purple-600 bg-purple-600' : 'border-gray-300'} rounded">
+                                            ${this.selectedChapters.chapter3 ? '<span class="text-white font-bold">✓</span>' : ''}
+                                        </div>
+                                        <div class="ml-4">
+                                            <span class="text-lg font-bold block">Chapter 3: Subtraction</span>
+                                            <p class="text-sm text-gray-600">3-digit & 4-digit subtraction, Mental math, Mixed operations</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white p-6 rounded-lg shadow cursor-pointer transition ${this.selectedChapters.chapter4 ? 'ring-4 ring-purple-400 bg-purple-50' : ''}" onclick="app.selectedChapters.chapter4 = !app.selectedChapters.chapter4; app.renderChapterSelect();">
+                                    <div class="flex items-start">
+                                        <div class="w-6 h-6 mt-1 flex items-center justify-center border-2 ${this.selectedChapters.chapter4 ? 'border-purple-600 bg-purple-600' : 'border-gray-300'} rounded">
+                                            ${this.selectedChapters.chapter4 ? '<span class="text-white font-bold">✓</span>' : ''}
+                                        </div>
+                                        <div class="ml-4">
+                                            <span class="text-lg font-bold block">Chapter 4: Multiplication</span>
+                                            <p class="text-sm text-gray-600">Multiply by 1-digit & 2-digit, Mental multiplication</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-8 rounded">
+                                <p class="text-sm text-gray-700"><strong>Selected Chapters:</strong> ${[this.selectedChapters.chapter1 && 'Ch1', this.selectedChapters.chapter2 && 'Ch2', this.selectedChapters.chapter3 && 'Ch3', this.selectedChapters.chapter4 && 'Ch4'].filter(Boolean).join(', ') || 'None selected'}</p>
+                            </div>
+
+                            <div class="flex gap-4">
+                                <button onclick="app.startPractice()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg">▶ Start Practice</button>
+                                <button onclick="app.goBack()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 rounded-lg">◀ Back</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderPractice() {
+                const accuracy = this.score.total > 0 ? Math.round((this.score.correct / this.score.total) * 100) : 0;
+                const isComparison = this.currentQuestion.isComparison;
+                document.getElementById('app').innerHTML = `
+                    <div class="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-pink-100 p-6">
+                        <div class="max-w-2xl mx-auto">
+                            <div class="text-center mb-8"><h1 class="text-4xl font-bold text-purple-800">Question ${this.score.total + 1}</h1></div>
+                            <div class="bg-white rounded-lg shadow-lg p-4 mb-6"><div class="flex justify-between"><div>Score: <span class="text-green-600 font-semibold">${this.score.correct}</span>/<span class="text-blue-600 font-semibold">${this.score.total}</span></div>${this.score.total > 0 ? `<div>Accuracy: ${accuracy}%</div>` : ''}</div></div>
+                            <div class="bg-white rounded-lg shadow-xl p-8 mb-6 fade-in">
+                                <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full mb-4">${this.currentQuestion.category}</span>
+                                <p class="text-3xl font-bold text-gray-800 text-center mb-8">${this.currentQuestion.question}</p>
+                                <div class="mb-6">
+                                    ${isComparison ? `
+                                        <div class="flex gap-3 justify-center">
+                                            <button onclick="app.selectSymbol('>')" ${this.feedback ? 'disabled' : ''} class="px-8 py-4 text-3xl font-bold rounded-lg ${this.userAnswer === '>' ? 'bg-purple-600 text-white' : 'bg-gray-200'} ${this.feedback ? 'opacity-50' : ''}"> &gt; </button>
+                                            <button onclick="app.selectSymbol('=')" ${this.feedback ? 'disabled' : ''} class="px-8 py-4 text-3xl font-bold rounded-lg ${this.userAnswer === '=' ? 'bg-purple-600 text-white' : 'bg-gray-200'} ${this.feedback ? 'opacity-50' : ''}"> = </button>
+                                            <button onclick="app.selectSymbol('<')" ${this.feedback ? 'disabled' : ''} class="px-8 py-4 text-3xl font-bold rounded-lg ${this.userAnswer === '<' ? 'bg-purple-600 text-white' : 'bg-gray-200'} ${this.feedback ? 'opacity-50' : ''}"> &lt; </button>
+                                        </div>
+                                    ` : `
+                                        <input type="text" id="answerInput" onkeypress="if(event.key==='Enter') app.validateAnswer()" placeholder="Type answer..." ${this.feedback ? 'disabled' : ''} class="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:border-purple-500" autofocus />
+                                    `}
+                                </div>
+                                ${this.feedback ? `<div class="mb-6 p-4 rounded-lg ${this.feedback.correct ? 'bg-green-50 border-2 border-green-300' : 'bg-red-50 border-2 border-red-300'}"><p class="text-lg font-semibold ${this.feedback.correct ? 'text-green-700' : 'text-red-700'}">${this.feedback.message}</p></div>` : ''}
+                                ${this.showSteps ? `<div class="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4"><h3 class="font-bold mb-2">Solution:</h3><p class="text-sm whitespace-pre-line">${this.currentQuestion.explanation}</p></div>` : ''}
+                                <div class="flex gap-4">
+                                    ${!this.feedback ? `<button onclick="app.validateAnswer()" class="flex-1 bg-purple-600 text-white font-bold py-3 rounded-lg">Validate</button>` : `<button onclick="app.generateQuestion()" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg">▶ Next</button>`}
+                                    <button onclick="app.endSession()" class="bg-orange-600 text-white font-bold py-3 px-6 rounded-lg">End Session</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderReview() {
+                const percentage = this.score.total > 0 ? Math.round((this.score.correct / this.score.total) * 100) : 0;
+                const gradeInfo = this.getGrade(percentage);
+                document.getElementById('app').innerHTML = `
+                    <div class="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-pink-100 p-6">
+                        <div class="max-w-2xl mx-auto">
+                            <div class="text-center mb-8"><h1 class="text-4xl font-bold text-purple-800">Session Complete! 🎉</h1></div>
+                            <div class="bg-white rounded-lg shadow-xl p-8 mb-6">
+                                <div class="flex justify-center mb-8"><div class="grade-badge ${gradeInfo.color} text-white">${gradeInfo.grade}</div></div>
+                                <div class="text-center mb-8"><p class="text-5xl font-bold text-gray-800">${percentage}%</p></div>
+                                <div class="grid grid-cols-3 gap-4 mb-8"><div class="bg-blue-50 p-4 rounded text-center"><p class="text-2xl font-bold text-blue-600">${this.score.total}</p><p class="text-gray-600">Total</p></div><div class="bg-green-50 p-4 rounded text-center"><p class="text-2xl font-bold text-green-600">${this.score.correct}</p><p class="text-gray-600">Correct</p></div><div class="bg-red-50 p-4 rounded text-center"><p class="text-2xl font-bold text-red-600">${this.score.total - this.score.correct}</p><p class="text-gray-600">Wrong</p></div></div>
+                                <div class="flex gap-4"><button onclick="app.startPractice()" class="flex-1 bg-purple-600 text-white font-bold py-3 rounded-lg">Practice Again</button><button onclick="app.goBack()" class="flex-1 bg-gray-600 text-white font-bold py-3 rounded-lg">Back to Menu</button></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderSessionHistory() {
+                document.getElementById('app').innerHTML = `
+                    <div class="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-pink-100 p-6">
+                        <div class="max-w-4xl mx-auto">
+                            <div class="text-center mb-8"><h1 class="text-4xl font-bold text-purple-800">📊 Session History</h1></div>
+                            ${this.sessionHistory.length === 0 ? `<div class="bg-white rounded-lg shadow p-8 text-center"><p class="text-gray-600 mb-4">No sessions yet.</p></div>` : `
+                                <div class="space-y-4 mb-6">
+                                    ${this.sessionHistory.map((s, i) => { const g = this.getGrade(s.percentage); return `<div class="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl" onclick="app.viewSessionDetail(${i})"><div class="flex justify-between"><div><p class="text-sm text-gray-500">${s.date}</p><p><strong>Session ${i+1}</strong></p></div><div class="text-right"><p class="text-2xl font-bold" style="color: ${g.color === 'bg-green-600' ? '#16a34a' : g.color === 'bg-green-500' ? '#22c55e' : g.color === 'bg-blue-600' ? '#2563eb' : g.color === 'bg-blue-500' ? '#3b82f6' : g.color === 'bg-yellow-600' ? '#ca8a04' : g.color === 'bg-yellow-500' ? '#eab308' : g.color === 'bg-orange-600' ? '#ea580c' : g.color === 'bg-red-600' ? '#dc2626' : '#991b1b'}">${g.grade}</p><p class="text-gray-600">${s.percentage}%</p></div></div><div class="grid grid-cols-3 gap-4 mt-3"><div><p class="text-gray-500 text-sm">Total</p><p class="text-lg font-bold">${s.totalQuestions}</p></div><div><p class="text-gray-500 text-sm">Correct</p><p class="text-lg font-bold text-green-600">${s.correctAnswers}</p></div><div><p class="text-gray-500 text-sm">Wrong</p><p class="text-lg font-bold text-red-600">${s.totalQuestions - s.correctAnswers}</p></div></div></div>`; }).join('')}
+                                </div>
+                            `}
+                            <button onclick="app.goBack()" class="w-full bg-gray-600 text-white font-bold py-3 rounded-lg">Back to Menu</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderSessionDetail() {
+                const session = this.sessionHistory[this.selectedSessionIndex];
+                const gradeInfo = this.getGrade(session.percentage);
+                document.getElementById('app').innerHTML = `
+                    <div class="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-pink-100 p-6">
+                        <div class="max-w-4xl mx-auto">
+                            <div class="text-center mb-8"><h1 class="text-4xl font-bold text-purple-800">Session Review</h1><p class="text-gray-600">${session.date}</p></div>
+                            <div class="bg-white rounded-lg shadow-lg p-8 mb-6"><div class="flex justify-between items-center mb-6"><div><p class="text-gray-600">Grade: <span class="text-2xl font-bold">${gradeInfo.grade}</span></p><p class="text-gray-600">Score: <span class="text-2xl font-bold">${session.percentage}%</span></p></div><div class="grid grid-cols-3 gap-4"><div class="text-center"><p class="text-gray-600">Total</p><p class="text-2xl font-bold">${session.totalQuestions}</p></div><div class="text-center"><p class="text-gray-600">Correct</p><p class="text-2xl font-bold text-green-600">${session.correctAnswers}</p></div><div class="text-center"><p class="text-gray-600">Wrong</p><p class="text-2xl font-bold text-red-600">${session.totalQuestions - session.correctAnswers}</p></div></div></div></div>
+                            <div class="space-y-4 mb-6"><h2 class="text-2xl font-bold text-gray-800">📝 All Questions</h2>
+                                ${session.questions.map((q, i) => `
+                                    <div class="bg-white rounded-lg shadow p-6 border-l-4 ${q.isCorrect ? 'border-green-500' : 'border-red-500'}">
+                                        <div class="flex justify-between items-start mb-3"><div><p class="text-sm text-gray-500">Q${i+1} - ${q.category}</p><p class="text-lg font-bold text-gray-800">${q.question}</p></div><div>${q.isCorrect ? '<p class="text-green-600 font-bold">✓ Correct</p>' : '<p class="text-red-600 font-bold">✗ Wrong</p>'}</div></div>
+                                        <div class="bg-gray-50 p-4 rounded mb-3"><p class="text-sm text-gray-600">Student: <span class="font-bold">${q.studentAnswer}</span></p><p class="text-sm text-gray-600">Correct: <span class="font-bold text-green-700">${q.correctAnswer}</span></p></div>
+                                        ${!q.isCorrect ? `<div class="bg-yellow-50 border-l-4 border-yellow-400 p-4"><p class="font-bold mb-2">Solution:</p><p class="text-sm whitespace-pre-line">${q.explanation}</p></div>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button onclick="app.viewSessionHistory()" class="w-full bg-gray-600 text-white font-bold py-3 rounded-lg">Back to Session History</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        const app = new MathPracticeApp();
+    </script>
+</body>
+</html>
